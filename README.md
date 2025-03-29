@@ -38,8 +38,20 @@ A modern weather application with real-time weather data, dynamic background the
    ```bash
    git clone https://github.com/your-username/weather-app.git
    cd weather-app
+  
+  2. **Install Tailwind CSS**
+     ```bash
+     npm install -D tailwindcss postcss autoprefixer
+     npx tailwindcss init -p
 
-API Integration Details
+  3. **Install Dependencies**
+     ```bash
+     npm install
+
+  4. **Execute**
+      ```bash
+     npm run dev
+  5. API Integration Details
 
 OpenWeatherMap APIs Used
 
