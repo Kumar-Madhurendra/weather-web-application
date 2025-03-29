@@ -10,7 +10,7 @@ const App = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_KEY = "Your Key";
+  const API_KEY = "532aa8b586ee15c0507e793d8c26778f";
 
   useEffect(() => {
     if (city.trim().length >= 3 && !weather) {
