@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from "react";
 import WeatherBackground from "./components/weatherBackground";
-import { WindIcon, HumidityIcon, VisibilityIcon, SunriseIcon, SunsetIcon } from "./components/Icons";
-import { getHumidityValue, getWindDirection, getVisibilityValue, convertTemperature } from "./components/helper";
+import {
+  WindIcon,
+  HumidityIcon,
+  VisibilityIcon,
+  SunriseIcon,
+  SunsetIcon,
+} from "./components/Icons";
+import {
+  getHumidityValue,
+  getWindDirection,
+  getVisibilityValue,
+  convertTemperature,
+} from "./components/helper";
 const App = () => {
   const [weather, setWeather] = useState(null);
   const [city, setCity] = useState("");
@@ -9,8 +20,18 @@ const App = () => {
   const [unit, setUnit] = useState("C");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
 
-  const API_KEY = "532aa8b586ee15c0507e793d8c26778f";
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  const API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 
   useEffect(() => {
     if (city.trim().length >= 3 && !weather) {
@@ -33,16 +54,25 @@ const App = () => {
 
   const fetchWeatherData = async (url, name = "") => {
     setError("");
+    setLoading(true); // Start loading
     setWeather(null);
+
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error((await response.json()).message || "City not found");
+      if (!response.ok)
+        throw new Error((await response.json()).message || "City not found");
+
       const data = await response.json();
-      setWeather(data);
-      setCity(name || data.name);
-      setSuggestion([]);
+
+      setTimeout(() => {
+        setWeather(data);
+        setCity(name || data.name);
+        setSuggestion([]);
+        setLoading(false);
+      }, 600);
     } catch (err) {
       setError(err.message);
+      setLoading(false);
     }
   };
 
@@ -64,11 +94,21 @@ const App = () => {
 
   return (
     <div className="min-h-screen">
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2 bg-gray-700 text-white rounded"
+      >
+        {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+      </button>
       <WeatherBackground condition={getWeatherCondition()} />
       <div className="flex items-center justify-center p-6 min-h-screen">
         <div className="bg-transparent backdrop-filter backdrop-blur-md rounded-xl shadow-2xl p-8 max-w-md text-white w-full border border-white/30 relative z-10">
-          <h1 className="text-4xl font-extrabold text-center mb-6">Weather App</h1>
-          {!weather ? (
+          <h1 className="text-4xl font-extrabold text-center mb-6">
+            Weather App
+          </h1>
+          {loading ? (
+            <p className="text-center text-xl">Loading...</p>
+          ) : !weather ? (
             <form onSubmit={handleSearch} className="flex flex-col relative">
               <input
                 value={city}
@@ -85,7 +125,9 @@ const App = () => {
                       onClick={() =>
                         fetchWeatherData(
                           `https://api.openweathermap.org/data/2.5/weather?lat=${s.lat}&lon=${s.lon}&appid=${API_KEY}&units=metric`,
-                          `${s.name},${s.country}${s.state ? `, ${s.state}` : ""}`
+                          `${s.name},${s.country}${
+                            s.state ? `, ${s.state}` : ""
+                          }`
                         )
                       }
                       className="block hover:bg-blue-700 bg-transparent px-4 py-2 text-sm text-left w-full transition-colors"
@@ -96,7 +138,10 @@ const App = () => {
                   ))}
                 </div>
               )}
-              <button type="submit" className="bg-purple-700 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors">
+              <button
+                type="submit"
+                className="bg-purple-700 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors"
+              >
                 Get Weather
               </button>
             </form>
@@ -125,15 +170,33 @@ const App = () => {
                 alt={weather.weather[0].description}
                 className="mx-auto my-4 animate-bounce"
               />
-              <p className='text-4xl'>
-  {convertTemperature(weather.main.temp, unit)} &deg;{unit}
-</p>
-              <p className='capitalize'>{weather.weather[0].description}</p>
-              <div className='flex flex-wrap justify-around mt-6'>
-              {[
-                  [HumidityIcon, "Humidity", `${weather.main.humidity}% (${getHumidityValue(weather.main.humidity)})`],
-                  [WindIcon, "Wind", `${weather.wind.speed}m/s ${weather.wind.deg ? `(${getWindDirection(weather.main.humidity)})` : ""}`],
-                  [VisibilityIcon, "Visibility", getVisibilityValue(weather.visibility)]
+              <p className="text-4xl">
+                {convertTemperature(weather.main.temp, unit)} &deg;{unit}
+              </p>
+              <p className="capitalize">{weather.weather[0].description}</p>
+              <div className="flex flex-wrap justify-around mt-6">
+                {[
+                  [
+                    HumidityIcon,
+                    "Humidity",
+                    `${weather.main.humidity}% (${getHumidityValue(
+                      weather.main.humidity
+                    )})`,
+                  ],
+                  [
+                    WindIcon,
+                    "Wind",
+                    `${weather.wind.speed}m/s ${
+                      weather.wind.deg
+                        ? `(${getWindDirection(weather.main.humidity)})`
+                        : ""
+                    }`,
+                  ],
+                  [
+                    VisibilityIcon,
+                    "Visibility",
+                    getVisibilityValue(weather.visibility),
+                  ],
                 ].map(([Icon, label, value]) => (
                   <div key={label} className="flex flex-col items-center m-2">
                     <Icon size={32} />
@@ -143,29 +206,39 @@ const App = () => {
                 ))}
               </div>
 
-              <div className='flex flex-wrap justify-around mt-6'>
+              <div className="flex flex-wrap justify-around mt-6">
                 {[
-                  [SunriseIcon,'Sunrise',weather.sys.sunrise],
-                  [SunsetIcon,'Sunset',weather.sys.sunset]
-                ].map(([Icon,label,time])=>(
-                  <div key={label} className='flex flex-col items-center m-2'>
-                    <Icon/>
-                    <p className='mt-1 font-semibold'>{label}</p>
-                    <p className='text-sm'>
-                      {new Date(time*1000).toLocaleDateString('en-GB',
-                        {hour:'2-digit',minute:'2-digit'}
-                      )}</p>
+                  [SunriseIcon, "Sunrise", weather.sys.sunrise],
+                  [SunsetIcon, "Sunset", weather.sys.sunset],
+                ].map(([Icon, label, time]) => (
+                  <div key={label} className="flex flex-col items-center m-2">
+                    <Icon />
+                    <p className="mt-1 font-semibold">{label}</p>
+                    <p className="text-sm">
+                      {new Date(time * 1000).toLocaleDateString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </div>
                 ))}
               </div>
 
-              <div className='mt-6 text-sm'>
-              <p><strong>Feels Like:</strong> {convertTemperature(weather.main.feels_like, unit)} &deg;{unit}</p>                <p><strong>Pressure:</strong>{weather.main.pressure}hPa</p>
+              <div className="mt-6 text-sm">
+                <p>
+                  <strong>Feels Like:</strong>{" "}
+                  {convertTemperature(weather.main.feels_like, unit)} &deg;
+                  {unit}
+                </p>{" "}
+                <p>
+                  <strong>Pressure:</strong>
+                  {weather.main.pressure}hPa
+                </p>
               </div>
             </div>
           )}
 
-          {error && <p className='text-red-400 text-center mt-4'>{error}</p>}
+          {error && <p className="text-red-400 text-center mt-4">{error}</p>}
         </div>
       </div>
     </div>
